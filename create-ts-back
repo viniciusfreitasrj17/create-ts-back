@@ -1,0 +1,179 @@
+#!/usr/bin/env bash
+
+##############################################################################################
+## Variables Global
+current_version="v1.0.0" # change here
+# param_no_lint="--no-lint"
+param_no_jest="--no-jest"
+# param_no_vscode="--no-vscode"
+# param_no_git="--no-git"
+
+##############################################################################################
+
+##############################################################################################
+## Validators Global
+[[ $(type -P npm) ]] || { echo -e "$error No have node instaled"; exit 1 ;}
+[[ $(type -P git) ]] || { echo -e "$error No have git instaled\nRun to install: '${yellow}sudo apt install git -y${close_color}'"; exit 1 ;}
+
+##############################################################################################
+
+##############################################################################################
+## Core
+
+function _core() {
+  param1="$1"
+  # param2="$2"
+  # param3="$3"
+  # param4="$4"
+  # no_lint="false"
+  no_jest="false"
+  # no_vscode="false"
+  # no_git="false"
+  [[ "$param1" == "$param_no_jest" ]] && { no_jest="true" ;}
+  # [[ "$param1" == "$param_no_lint" || "$param2" == "$param_no_lint" || "$param3" == "$param_no_lint" || "$param4" == "$param_no_lint" ]] && no_lint="true"
+  # [[ "$param1" == "$param_no_jest" || "$param2" == "$param_no_jest" || "$param3" == "$param_no_jest" || "$param4" == "$param_no_jest" ]] && no_jest="true"
+  # [[ "$param1" == "$param_no_vscode" || "$param2" == "$param_no_vscode" || "$param3" == "$param_no_vscode" || "$param4" == "$param_no_vscode" ]] && no_vscode="true"
+  # [[ "$param1" == "$param_no_git" || "$param2" == "$param_no_git" || "$param3" == "$param_no_git" || "$param4" == "$param_no_git" ]] && no_git="true"
+
+  npm init -y
+  npm i -D typescript ts-node-dev ts-node
+  npx tsc --init
+  [[ "$no_jest" == "false" ]] && npm i -D jest ts-jest @types/jest supertest @types/supertest
+  echo "node_modules" > .gitignore
+  echo ".env" >> .gitignore
+  echo "dist" >> .gitignore
+  [[ "$no_jest" == "false" ]] && echo "coverage" >> .gitignore
+  git init
+  if [[ "$no_jest" == "false" ]]; then
+    cat > jest.config.ts <<eol
+	export default {
+	  roots: ['<rootDir>/src', '<rootDir>/test'],
+	  collectCoverageFrom: [
+	    '<rootDir>/src/**/*.ts', 
+	  ],
+	  coverageDirectory: 'coverage',
+	  transform: {
+	    '.+\\.ts$': 'ts-jest'
+	  },
+	  coverageProvider: 'v8',
+	  testEnvironment: 'node',
+	  coveragePathIgnorePatterns: [
+	    '.protocol.ts',
+	    '.dto.ts',
+	    '.d.ts',
+	  ]
+	}
+eol
+  fi
+  if [[ "$no_jest" == "false" ]]; then
+    sed -i "s/\"test\": \".*\"/\"test\": \"jest\",\n\t\t\"test:coverage\": \"jest --coverage\",\n\t\t\"dev\": \"tsnd --respawn --transpile-only src\/server.ts\",\n\t\t\"build\": \"\.\/node_modules\/typescript\/bin\/tsc\",\n\t\t\"prepare\": \"husky install\"/" package.json
+  else
+    sed -i "s/\"test\": \".*\"/\"dev\": \"tsnd --respawn --transpile-only src\/server.ts\",\n\t\t\"build\": \"\.\/node_modules\/typescript\/bin\/tsc\",\n\t\t\"prepare\": \"husky install\"/" package.json
+  fi
+  sed -i "s/\/\/ \"outDir\": \"\.\/\",/\"outDir\": \"\.\/dist\",/" tsconfig.json
+  mkdir src
+  [[ "$no_jest" == "false" ]] && mkdir test
+  npm i -D @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint eslint-config-prettier eslint-config-standard-with-typescript eslint-plugin-import eslint-plugin-node eslint-plugin-prettier eslint-plugin-promise husky prettier lint-staged git-commit-msg-linter
+  cat > .eslintrc.json <<eol
+	{
+		"extends": "standard-with-typescript",
+		"parserOptions": {
+			"project": "./tsconfig.json"
+		},
+		"rules": {
+			"@typescript-eslint/camelcase": "off",
+			"@typescript-eslint/strict-boolean-expressions": "off",
+			"@typescript-eslint/no-unused-vars": "off",
+			"@typescript-eslint/no-implied-eval": "off",
+			"@typescript-eslint/no-misused-promises": "off",
+			"no-prototype-builtins": "off",
+			"no-eval": "off",
+			"no-unused-expressions": "off",
+			"@typescript-eslint/no-floating-promises": "off",
+			"@typescript-eslint/consistent-type-imports": "off"
+		}
+	}
+eol
+cat > .eslintignore <<eol
+	node_modules
+	dist
+	jest.config.ts
+eol
+cat > .prettierrc <<eol
+	{
+		"semi": false,
+		"trailingComma": "all",
+		"singleQuote": true,
+		"printWidth": 80,
+		"tabWidth": 2
+	}
+eol
+
+mkdir .vscode
+cat > .vscode/settings.json <<eol
+{
+  "editor.formatOnSave": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    "source.formatDocument": true
+  }
+}
+eol
+
+cat > .huskyrc <<eol
+{
+  "hooks": {
+    "pre-commit": "node_modules/lint-staged/bin/lint-staged.js"
+  }
+}
+eol
+
+cat > .lintstagedrc <<eol
+{
+  "*.ts": [
+    "eslint 'src/**' --fix", 
+    "prettier --write src/**"
+  ]
+}
+eol
+  npm run prepare
+  npx husky add .husky/pre-commit "npx lint-staged"
+  npx husky add .husky/commit-msg ".git/hooks/commit-msg \$1"
+}
+##############################################################################################
+
+##############################################################################################
+## Help
+function _help() {
+  echo \
+    "NAME
+    create-ts-back - Create a backend project using Typescript, Git, Linters and Jest (optional)
+
+SYNOPSIS
+	create-ts-back OPTIONS
+
+OPTIONS:
+    -h, --help
+
+        This Help
+
+
+    --no-jest
+
+        Remove jest deps from package.json"
+    exit 0
+}
+
+##############################################################################################
+
+##############################################################################################
+## Main
+case $1 in
+	-h|--help)          shift; _help "$@" ;;
+  -v|--version)       shift; echo "create-ts-back $current_version" ;;
+  # *)                  shift; echo "Invalid option, use option -h, --help to show help."
+  *)                  _core "$@"
+esac
+
+##############################################################################################
