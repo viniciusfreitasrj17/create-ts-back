@@ -72,41 +72,42 @@ eol
   fi
   sed -i "s/\/\/ \"outDir\": \"\.\/\",/\"outDir\": \"\.\/dist\",/" tsconfig.json
   mkdir src
+  touch src/server.ts
   [[ "$no_jest" == "false" ]] && mkdir test
   npm i -D @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint eslint-config-prettier eslint-config-standard-with-typescript eslint-plugin-import eslint-plugin-node eslint-plugin-prettier eslint-plugin-promise husky prettier lint-staged git-commit-msg-linter
-  cat > .eslintrc.json <<eol
-	{
-		"extends": "standard-with-typescript",
-		"parserOptions": {
-			"project": "./tsconfig.json"
-		},
-		"rules": {
-			"@typescript-eslint/camelcase": "off",
-			"@typescript-eslint/strict-boolean-expressions": "off",
-			"@typescript-eslint/no-unused-vars": "off",
-			"@typescript-eslint/no-implied-eval": "off",
-			"@typescript-eslint/no-misused-promises": "off",
-			"no-prototype-builtins": "off",
-			"no-eval": "off",
-			"no-unused-expressions": "off",
-			"@typescript-eslint/no-floating-promises": "off",
-			"@typescript-eslint/consistent-type-imports": "off"
-		}
+cat > .eslintrc.json <<eol
+{
+	"extends": "standard-with-typescript",
+	"parserOptions": {
+		"project": "./tsconfig.json"
+	},
+	"rules": {
+		"@typescript-eslint/camelcase": "off",
+		"@typescript-eslint/strict-boolean-expressions": "off",
+		"@typescript-eslint/no-unused-vars": "off",
+		"@typescript-eslint/no-implied-eval": "off",
+		"@typescript-eslint/no-misused-promises": "off",
+		"no-prototype-builtins": "off",
+		"no-eval": "off",
+		"no-unused-expressions": "off",
+		"@typescript-eslint/no-floating-promises": "off",
+		"@typescript-eslint/consistent-type-imports": "off"
 	}
+}
 eol
 cat > .eslintignore <<eol
-	node_modules
-	dist
-	jest.config.ts
+node_modules
+dist
+jest.config.ts
 eol
 cat > .prettierrc <<eol
-	{
-		"semi": false,
-		"trailingComma": "all",
-		"singleQuote": true,
-		"printWidth": 80,
-		"tabWidth": 2
-	}
+{
+	"semi": false,
+	"trailingComma": "all",
+	"singleQuote": true,
+	"printWidth": 80,
+	"tabWidth": 2
+}
 eol
 
 mkdir .vscode
